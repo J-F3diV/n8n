@@ -56,10 +56,10 @@ import {
 	PACKAGE_SUBFOLDER,
 	PROMOTE_SELECTION_COMMIT_MESSAGE,
 } from './constants';
+import { MERGE_REQUEST_TITLE_MAX_LENGTH } from './git-hosts/gitlab-merge-request.client';
 import { PromotionBindingPreflightService } from './promotion-binding-preflight.service';
 import { PromotionConfigResolver } from './promotion-config.resolver';
 import { PromotionProvidersService } from './promotion-providers.service';
-import { MERGE_REQUEST_TITLE_MAX_LENGTH } from './git-hosts/gitlab-merge-request.client';
 import { PromotionReviewsService } from './promotion-reviews.service';
 import { PromotionWorkingDirectoryService } from './promotion-working-directory.service';
 import { PromotionsGitService } from './promotions-git.service';

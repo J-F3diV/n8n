@@ -1,11 +1,10 @@
 import { Logger } from '@n8n/backend-common';
 import { OutboundHttp, type HttpRequestClient } from '@n8n/backend-network';
 import { Service } from '@n8n/di';
+import { BadRequestError, ConflictError, ServiceUnavailableError } from '@n8n/errors';
 import { errorChain } from '@n8n/utils/errors/error-chain';
 import type { IDataObject, IHttpRequestMethods, IN8nHttpFullResponse } from 'n8n-workflow';
 import { z } from 'zod';
-
-import { BadRequestError, ConflictError, ServiceUnavailableError } from '@n8n/errors';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 /** GitLab rejects a longer merge request title. */

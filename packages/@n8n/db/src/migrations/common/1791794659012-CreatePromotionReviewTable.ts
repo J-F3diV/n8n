@@ -7,7 +7,7 @@ const userTable = 'user';
 
 // Inlined on purpose: a migration must not import live enums from other packages.
 const DIRECTIONS = ['promote', 'apply'];
-const REVIEW_STATES = ['open', 'merged', 'closed', 'unavailable'];
+const REVIEW_STATES = ['open', 'merged', 'closed'];
 
 /**
  * A promotion run is one Promote or Apply. A promotion review is the host
@@ -61,7 +61,7 @@ export class CreatePromotionReviewTable1791794659012 implements ReversibleMigrat
 					.notNull.default("'open'")
 					.withEnumCheck(REVIEW_STATES)
 					.comment(
-						'PromotionReviewState enum: "open", "merged", "closed", "unavailable". Only "open" rows are refreshed from the host.',
+						'PromotionReviewState enum: "open", "merged", "closed". Only "open" rows are refreshed from the host.',
 					),
 				column('mergedAt').timestampTimezone().comment('Mirrored from the host.'),
 				column('closedAt').timestampTimezone().comment('Mirrored from the host.'),

@@ -6,7 +6,7 @@
 <summary><strong>Table Definition</strong></summary>
 
 ```sql
-CREATE TABLE "promotion_review" ("id" varchar(36) PRIMARY KEY NOT NULL, "runId" varchar(36) NOT NULL, "remoteReviewId" varchar(255) NOT NULL, "state" varchar(16) NOT NULL DEFAULT ('open'), "mergedAt" datetime(3), "closedAt" datetime(3), "approvedById" varchar, "approvedAt" datetime(3), "createdAt" datetime(3) NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')), CONSTRAINT "CHK_promotion_review_state" CHECK ("state" IN ('open', 'merged', 'closed', 'unavailable')), CONSTRAINT "FK_promotion_review_runId" FOREIGN KEY ("runId") REFERENCES "promotion_run" ("id") ON DELETE CASCADE, CONSTRAINT "FK_promotion_review_approvedById" FOREIGN KEY ("approvedById") REFERENCES "user" ("id") ON DELETE SET NULL)
+CREATE TABLE "promotion_review" ("id" varchar(36) PRIMARY KEY NOT NULL, "runId" varchar(36) NOT NULL, "remoteReviewId" varchar(255) NOT NULL, "state" varchar(16) NOT NULL DEFAULT ('open'), "mergedAt" datetime(3), "closedAt" datetime(3), "approvedById" varchar, "approvedAt" datetime(3), "createdAt" datetime(3) NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')), CONSTRAINT "CHK_promotion_review_state" CHECK ("state" IN ('open', 'merged', 'closed')), CONSTRAINT "FK_promotion_review_runId" FOREIGN KEY ("runId") REFERENCES "promotion_run" ("id") ON DELETE CASCADE, CONSTRAINT "FK_promotion_review_approvedById" FOREIGN KEY ("approvedById") REFERENCES "user" ("id") ON DELETE SET NULL)
 ```
 
 </details>
@@ -29,7 +29,7 @@ CREATE TABLE "promotion_review" ("id" varchar(36) PRIMARY KEY NOT NULL, "runId" 
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| - | CHECK | CHECK ("state" IN ('open', 'merged', 'closed', 'unavailable')) |
+| - | CHECK | CHECK ("state" IN ('open', 'merged', 'closed')) |
 | - (Foreign key ID: 0) | FOREIGN KEY | FOREIGN KEY (approvedById) REFERENCES user (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE |
 | - (Foreign key ID: 1) | FOREIGN KEY | FOREIGN KEY (runId) REFERENCES promotion_run (id) ON UPDATE NO ACTION ON DELETE CASCADE MATCH NONE |
 | id | PRIMARY KEY | PRIMARY KEY (id) |

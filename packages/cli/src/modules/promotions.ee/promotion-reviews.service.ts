@@ -1,8 +1,8 @@
 import type { PromotionMergeRequestResult } from '@n8n/api-types';
 import { Logger } from '@n8n/backend-common';
-import { UrlService } from '@n8n/backend-services';
 import { TransactionRunner, type User } from '@n8n/db';
 import { Service } from '@n8n/di';
+import { ResponseError } from '@n8n/errors';
 import { generateNanoId } from '@n8n/utils/generate-nano-id';
 import { createResultError, createResultOk, type Result } from '@n8n/utils/result';
 
@@ -43,7 +43,6 @@ export class PromotionReviewsService {
 		private readonly txRunner: TransactionRunner,
 		private readonly hostResolver: PromotionReviewHostResolver,
 		private readonly mergeRequests: GitLabMergeRequestClient,
-		private readonly urlService: UrlService,
 		private readonly logger: Logger,
 	) {
 		this.logger = this.logger.scoped('promotions');
@@ -67,9 +66,6 @@ export class PromotionReviewsService {
 		if (!host.result) return { warnings: [] };
 		const { access, projectPath } = host.result;
 
-		// The id exists before the row, so the merge request can link to the review.
-		const reviewId = generateNanoId();
-
 		const mergeRequest = await settle(
 			async () =>
 				await this.mergeRequests.createMergeRequest(access, {
@@ -77,7 +73,7 @@ export class PromotionReviewsService {
 					sourceBranch: branchName,
 					targetBranch: baseBranchName,
 					title,
-					description: this.mergeRequestDescription(actor, commitSha, reviewId),
+					description: this.mergeRequestDescription(actor, commitSha),
 				}),
 		);
 		if (!mergeRequest.ok) {
@@ -86,6 +82,7 @@ export class PromotionReviewsService {
 		}
 		const { iid, project_id: projectId, web_url: webUrl } = mergeRequest.result;
 
+		const reviewId = generateNanoId();
 		const review = await settle(
 			async () =>
 				await this.txRunner.run({}, async (ctx) => {
@@ -121,14 +118,11 @@ export class PromotionReviewsService {
 		return { mergeRequest: { reviewId, iid, webUrl }, warnings: [] };
 	}
 
-	private mergeRequestDescription(actor: User, commitSha: string, reviewId: string) {
-		const reviewUrl = `${this.urlService.getInstanceBaseUrl()}/reviews/promotion:${reviewId}`;
+	private mergeRequestDescription(actor: User, commitSha: string) {
 		return [
 			`Opened by n8n for a promotion by ${displayName(actor)}.`,
 			'',
 			`Commit: ${commitSha}`,
-			'',
-			`Review in n8n: ${reviewUrl}`,
 		].join('\n');
 	}
 }
@@ -146,6 +140,6 @@ const displayName = ({ firstName, lastName, email, id }: User) =>
 	[firstName, lastName].filter(Boolean).join(' ') || email || id;
 
 const mergeRequestWarning = (branchName: string, error: unknown) => {
-	const reason = error instanceof Error ? error.message : 'Unknown error';
-	return `The branch ${branchName} was pushed, but no merge request was opened: ${reason}`;
+	const prefix = `The branch ${branchName} was pushed, but no merge request was opened`;
+	return error instanceof ResponseError ? `${prefix}: ${error.message}` : `${prefix}.`;
 };

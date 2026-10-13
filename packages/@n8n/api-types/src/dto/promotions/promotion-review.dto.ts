@@ -5,10 +5,9 @@ import { Z } from '../../zod-class';
 
 /**
  * The state of a Promotion Review. `open` mirrors the review on the host while
- * it is open. `merged` and `closed` are terminal and owned by n8n. `unavailable`
- * means the review on the host or its connection is gone.
+ * it is open. `merged` and `closed` are terminal and owned by n8n.
  */
-export const promotionReviewStateSchema = z.enum(['open', 'merged', 'closed', 'unavailable']);
+export const promotionReviewStateSchema = z.enum(['open', 'merged', 'closed']);
 export type PromotionReviewState = z.infer<typeof promotionReviewStateSchema>;
 
 const reviewUserSchema = z.object({

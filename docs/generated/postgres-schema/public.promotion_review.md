@@ -12,13 +12,13 @@
 | mergedAt | timestamp(3) with time zone |  | true |  |  | Mirrored from the host. |
 | remoteReviewId | varchar(255) |  | false |  |  | Opaque reference to the review on the host. The prefix names the host kind, the rest is parsed by that host client, e.g. "gitlab:\<projectId\>!\<iid\>". |
 | runId | varchar(36) |  | false |  | [public.promotion_run](public.promotion_run.md) | The promotion run that opened this review. |
-| state | varchar(16) | 'open'::character varying | false |  |  | PromotionReviewState enum: "open", "merged", "closed", "unavailable". Only "open" rows are refreshed from the host. |
+| state | varchar(16) | 'open'::character varying | false |  |  | PromotionReviewState enum: "open", "merged", "closed". Only "open" rows are refreshed from the host. |
 
 ## Constraints
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| CHK_promotion_review_state | CHECK | CHECK (((state)::text = ANY ((ARRAY['open'::character varying, 'merged'::character varying, 'closed'::character varying, 'unavailable'::character varying])::text[]))) |
+| CHK_promotion_review_state | CHECK | CHECK (((state)::text = ANY ((ARRAY['open'::character varying, 'merged'::character varying, 'closed'::character varying])::text[]))) |
 | FK_promotion_review_approvedById | FOREIGN KEY | FOREIGN KEY ("approvedById") REFERENCES "user"(id) ON DELETE SET NULL |
 | FK_promotion_review_runId | FOREIGN KEY | FOREIGN KEY ("runId") REFERENCES promotion_run(id) ON DELETE CASCADE |
 | PK_fe93e2f1add228dc14d3330c8e5 | PRIMARY KEY | PRIMARY KEY (id) |

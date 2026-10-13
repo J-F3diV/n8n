@@ -1,5 +1,4 @@
 import type { Logger } from '@n8n/backend-common';
-import type { UrlService } from '@n8n/backend-services';
 import type { TransactionRunner, User } from '@n8n/db';
 import { mock } from 'vitest-mock-extended';
 
@@ -22,7 +21,6 @@ describe('PromotionReviewsService', () => {
 	const txRunner = mock<TransactionRunner>();
 	const hostResolver = mock<PromotionReviewHostResolver>();
 	const mergeRequests = mock<GitLabMergeRequestClient>();
-	const urlService = mock<UrlService>();
 	const logger = mock<Logger>();
 	logger.scoped.mockReturnValue(logger);
 
@@ -32,7 +30,6 @@ describe('PromotionReviewsService', () => {
 		txRunner,
 		hostResolver,
 		mergeRequests,
-		urlService,
 		logger,
 	);
 
@@ -69,7 +66,6 @@ describe('PromotionReviewsService', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		logger.scoped.mockReturnValue(logger);
-		urlService.getInstanceBaseUrl.mockReturnValue('https://n8n.example.com');
 		hostResolver.resolve.mockResolvedValue(host);
 		mergeRequests.createMergeRequest.mockResolvedValue(mergeRequest);
 		txRunner.run.mockImplementation(async (ctx, fn) => await fn(ctx));
@@ -87,7 +83,7 @@ describe('PromotionReviewsService', () => {
 		expect(reviewRepository.insertReview).not.toHaveBeenCalled();
 	});
 
-	it('opens the merge request with the review link and records the review', async () => {
+	it('opens the merge request and records the review', async () => {
 		const result = await service.openMergeRequest(input, actor, push);
 
 		expect(result).toEqual({
@@ -100,10 +96,11 @@ describe('PromotionReviewsService', () => {
 			sourceBranch: push.branchName,
 			targetBranch: 'staging',
 			title: 'Promote the thing',
-			description: expect.stringContaining(
-				`Review in n8n: https://n8n.example.com/reviews/promotion:${reviewId}`,
-			),
+			description: expect.stringContaining(`Commit: ${push.commitSha}`),
 		});
+		expect(mergeRequests.createMergeRequest.mock.calls[0][1].description).not.toContain(
+			'Review in n8n',
+		);
 		expect(mergeRequests.createMergeRequest.mock.calls[0][1].description).toContain(
 			'promotion by Ada Lovelace',
 		);
@@ -131,9 +128,7 @@ describe('PromotionReviewsService', () => {
 		hostResolver.resolve.mockRejectedValue(new Error('decrypt failed'));
 
 		await expect(service.openMergeRequest(input, actor, push)).resolves.toEqual({
-			warnings: [
-				`The branch ${push.branchName} was pushed, but no merge request was opened: decrypt failed`,
-			],
+			warnings: [`The branch ${push.branchName} was pushed, but no merge request was opened.`],
 		});
 		expect(mergeRequests.createMergeRequest).not.toHaveBeenCalled();
 	});

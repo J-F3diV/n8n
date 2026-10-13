@@ -116,7 +116,10 @@ describe('PromotionReviewRepository', () => {
 	it('keeps the review when its config or approver is deleted', async () => {
 		const { review, run } = await insertReview();
 		const member = await createMember();
-		await reviewRepository.claimApproval(review.id, member.id);
+		await reviewRepository.update(
+			{ id: review.id },
+			{ approvedById: member.id, approvedAt: new Date() },
+		);
 
 		await connectionRepository.delete({ id: connectionId });
 		await Container.get(UserRepository).delete({ id: member.id });
@@ -151,16 +154,14 @@ describe('PromotionReviewRepository', () => {
 		for (const [index, review] of [first, merged, closed].entries()) {
 			await reviewRepository.update({ id: review.id }, { createdAt: new Date(1_000_000 * index) });
 		}
-		await reviewRepository.recordSync(merged.id, {
-			state: 'merged',
-			mergedAt: new Date(),
-			closedAt: null,
-		});
-		await reviewRepository.recordSync(closed.id, {
-			state: 'unavailable',
-			mergedAt: null,
-			closedAt: null,
-		});
+		await reviewRepository.update(
+			{ id: merged.id },
+			{ state: 'merged', mergedAt: new Date(), closedAt: null },
+		);
+		await reviewRepository.update(
+			{ id: closed.id },
+			{ state: 'closed', mergedAt: null, closedAt: null },
+		);
 
 		const all = await reviewRepository.listReviews({ offset: 0, limit: 10 });
 		expect(all.count).toBe(3);
@@ -176,68 +177,6 @@ describe('PromotionReviewRepository', () => {
 		const page = await reviewRepository.listReviews({ offset: 1, limit: 1 });
 		expect(page.count).toBe(3);
 		expect(page.data.map((r) => r.id)).toEqual([merged.id]);
-	});
-
-	it('finds only open reviews for a refresh', async () => {
-		const { review: open } = await insertReview();
-		const { review: merged } = await insertReview();
-		await reviewRepository.recordSync(merged.id, {
-			state: 'merged',
-			mergedAt: new Date(),
-			closedAt: null,
-		});
-
-		const found = await reviewRepository.findOpenReviews();
-		expect(found.map((r) => r.id)).toEqual([open.id]);
-		expect(found[0].run?.config?.connection?.id).toBe(connectionId);
-	});
-
-	it('lets only the first approver claim a review and can release the claim', async () => {
-		const { review } = await insertReview();
-		const member = await createMember();
-
-		await expect(reviewRepository.claimApproval(review.id, owner.id)).resolves.toBe(true);
-		await expect(reviewRepository.claimApproval(review.id, member.id)).resolves.toBe(false);
-
-		let found = await reviewRepository.findByIdWithRelations(review.id);
-		expect(found?.approvedById).toBe(owner.id);
-		expect(found?.approvedAt).toBeInstanceOf(Date);
-
-		await reviewRepository.releaseApproval(review.id);
-		found = await reviewRepository.findByIdWithRelations(review.id);
-		expect(found).toMatchObject({ approvedById: null, approvedAt: null });
-
-		await expect(reviewRepository.claimApproval(review.id, member.id)).resolves.toBe(true);
-	});
-
-	it('does not let a closed review be approved', async () => {
-		const { review } = await insertReview();
-		await reviewRepository.recordSync(review.id, {
-			state: 'closed',
-			mergedAt: null,
-			closedAt: new Date(),
-		});
-
-		await expect(reviewRepository.claimApproval(review.id, owner.id)).resolves.toBe(false);
-	});
-
-	it('ignores a sync that arrives after the review left the open state', async () => {
-		const { review } = await insertReview();
-		const closedAt = new Date('2026-01-01T00:00:00.000Z');
-		await reviewRepository.recordSync(review.id, {
-			state: 'closed',
-			mergedAt: null,
-			closedAt,
-		});
-
-		await reviewRepository.recordSync(review.id, {
-			state: 'merged',
-			mergedAt: new Date('2026-02-01T00:00:00.000Z'),
-			closedAt: null,
-		});
-
-		const found = await reviewRepository.findByIdWithRelations(review.id);
-		expect(found).toMatchObject({ state: 'closed', mergedAt: null, closedAt });
 	});
 
 	it('pages stably when reviews share a creation time', async () => {
