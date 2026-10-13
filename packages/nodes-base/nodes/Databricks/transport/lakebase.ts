@@ -36,18 +36,14 @@ function isExpiredToken(error: unknown, body: Record<string, unknown> | undefine
 	return /expired/i.test(text) && /jwt|token/i.test(text);
 }
 
-const OPENAPI_SETTING_PATH =
-	'In Databricks open the project, then Data API > API > Advanced settings, and enable OpenAPI specification.';
-
 /**
- * A dropdown shows only an error's message, so a raw PostgREST code leaves the user
- * with nothing to act on. Mutates rather than re-wraps, because only a NodeApiError
- * carries its description as far as the dropdown.
+ * A dropdown shows only an error's message, so the hint `lakebaseApiRequest` already
+ * attached is not visible there. Mutates rather than re-wraps, because only a
+ * NodeApiError carries its description as far as the dropdown.
  */
 export function explainLakebaseSchemaError(error: unknown, openApiMessage: string): never {
 	if (error instanceof NodeApiError && errorBody(error)?.code === 'PGRST205') {
 		error.message = openApiMessage;
-		error.description = OPENAPI_SETTING_PATH;
 		throw error;
 	}
 

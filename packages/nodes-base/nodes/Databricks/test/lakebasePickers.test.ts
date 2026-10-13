@@ -10,6 +10,7 @@ import type {
 import { mockDeep } from 'vitest-mock-extended';
 
 import { resolveLakebaseSchemaUrl, resolveLakebaseTableUrl } from '../actions/lakebase/helpers';
+import { OPENAPI_DISABLED_NOTICE } from '../actions/lakebase/openApiDocument';
 import { LAKEBASE_ERROR_HINTS } from '../transport/lakebaseErrors';
 
 // The shared Lakebase transport waits before its schema-cache retry
@@ -453,9 +454,7 @@ describe('listSearch -> getLakebaseTables', () => {
 		expect(error.message).toBe(
 			'Turn on the "OpenAPI specification" setting of the Data API to list tables, or enter the table name By ID',
 		);
-		expect(error.description).toBe(
-			'In Databricks open the project, then Data API > API > Advanced settings, and enable OpenAPI specification.',
-		);
+		expect(error.description).toBe(OPENAPI_DISABLED_NOTICE);
 	});
 
 	it('rethrows another Data API error with its own hint, not the OpenAPI one', async () => {
