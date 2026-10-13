@@ -13,8 +13,11 @@ export type PromotionReviewStateSync = Pick<PromotionReview, 'state' | 'mergedAt
 
 const TERMINAL_STATES: PromotionReviewState[] = ['merged', 'closed', 'unavailable'];
 
-/** The run carries the connection, the creator, the branch and the commit. */
-const WITH_RUN = { run: { connection: true, createdBy: true }, approvedBy: true } as const;
+/** The run carries the config, the creator, the branch and the commit. */
+const WITH_RUN = {
+	run: { config: { connection: true }, createdBy: true },
+	approvedBy: true,
+} as const;
 
 @Service()
 export class PromotionReviewRepository extends BaseRepository<PromotionReview> {
@@ -55,7 +58,10 @@ export class PromotionReviewRepository extends BaseRepository<PromotionReview> {
 
 	/** Only open rows change on the host, so a refresh reads these alone. */
 	async findOpenReviews(): Promise<PromotionReview[]> {
-		return await this.find({ where: { state: 'open' }, relations: { run: { connection: true } } });
+		return await this.find({
+			where: { state: 'open' },
+			relations: { run: { config: { connection: true } } },
+		});
 	}
 
 	async recordSync(id: string, sync: PromotionReviewStateSync): Promise<void> {

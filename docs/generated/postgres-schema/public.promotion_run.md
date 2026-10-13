@@ -6,10 +6,10 @@
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
 | branchName | varchar(255) |  | false |  |  | The branch this run pushed or applied. |
 | commitSha | varchar(64) |  | false |  |  | The commit this run pushed or applied. |
-| connectionId | varchar(36) |  | true |  | [public.promotion_connection](public.promotion_connection.md) | The connection this run used. NULL after the connection is deleted. |
+| configId | varchar(36) |  | true |  | [public.promotion_config](public.promotion_config.md) | The config this run used. NULL after the config is deleted. |
 | createdAt | timestamp(3) with time zone | CURRENT_TIMESTAMP(3) | false |  |  |  |
 | createdById | uuid |  | true |  | [public.user](public.user.md) | The user who ran Promote or Apply. |
-| direction | varchar(16) |  | false |  |  | PromotionDirection enum: "promote" pushes to the remote, "apply" imports from it. |
+| direction | varchar(16) |  | false |  |  | PromotionDirection enum: "promote" pushes to the remote, "apply" imports from it. Copied from the config when the run is written. |
 | id | varchar(36) |  | false | [public.promotion_review](public.promotion_review.md) |  |  |
 
 ## Constraints
@@ -17,7 +17,7 @@
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
 | CHK_promotion_run_direction | CHECK | CHECK (((direction)::text = ANY ((ARRAY['promote'::character varying, 'apply'::character varying])::text[]))) |
-| FK_promotion_run_connectionId | FOREIGN KEY | FOREIGN KEY ("connectionId") REFERENCES promotion_connection(id) ON DELETE SET NULL |
+| FK_promotion_run_configId | FOREIGN KEY | FOREIGN KEY ("configId") REFERENCES promotion_config(id) ON DELETE SET NULL |
 | FK_promotion_run_createdById | FOREIGN KEY | FOREIGN KEY ("createdById") REFERENCES "user"(id) ON DELETE SET NULL |
 | PK_f5b941d810bf2eb7a5f8327f446 | PRIMARY KEY | PRIMARY KEY (id) |
 | promotion_run_branchName_not_null | n | NOT NULL "branchName" |
@@ -30,7 +30,7 @@
 
 | Name | Definition |
 | ---- | ---------- |
-| IDX_721876320c769ad6ce58268b14 | CREATE INDEX "IDX_721876320c769ad6ce58268b14" ON public.promotion_run USING btree ("connectionId") |
+| IDX_5c00951cc85ac1bc6f120b1e69 | CREATE INDEX "IDX_5c00951cc85ac1bc6f120b1e69" ON public.promotion_run USING btree ("configId") |
 | PK_f5b941d810bf2eb7a5f8327f446 | CREATE UNIQUE INDEX "PK_f5b941d810bf2eb7a5f8327f446" ON public.promotion_run USING btree (id) |
 
 ## Relations
@@ -38,26 +38,26 @@
 ```mermaid
 erDiagram
 
-"public.promotion_run" }o--o| "public.promotion_connection" : "FOREIGN KEY (#quot;connectionId#quot;) REFERENCES promotion_connection(id) ON DELETE SET NULL"
+"public.promotion_run" }o--o| "public.promotion_config" : "FOREIGN KEY (#quot;configId#quot;) REFERENCES promotion_config(id) ON DELETE SET NULL"
 "public.promotion_run" }o--o| "public.user" : "FOREIGN KEY (#quot;createdById#quot;) REFERENCES #quot;user#quot;(id) ON DELETE SET NULL"
 "public.promotion_review" }o--|| "public.promotion_run" : "FOREIGN KEY (#quot;runId#quot;) REFERENCES promotion_run(id) ON DELETE CASCADE"
 
 "public.promotion_run" {
   varchar_255_ branchName
   varchar_64_ commitSha
-  varchar_36_ connectionId FK
+  varchar_36_ configId FK
   timestamp_3__with_time_zone createdAt
   uuid createdById FK
   varchar_16_ direction
   varchar_36_ id
 }
-"public.promotion_connection" {
+"public.promotion_config" {
+  varchar_36_ connectionId FK
   timestamp_3__with_time_zone createdAt
+  varchar_16_ direction
   varchar_36_ id
   varchar_128_ name
-  varchar_36_ providerId FK
-  varchar_16_ scope
-  json target
+  json settings
   timestamp_3__with_time_zone updatedAt
 }
 "public.user" {

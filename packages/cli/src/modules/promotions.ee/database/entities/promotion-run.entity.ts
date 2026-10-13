@@ -11,11 +11,12 @@ import {
 	type Relation,
 } from '@n8n/typeorm';
 
-import { PromotionConnection } from './promotion-connection.entity';
+import { PromotionConfig } from './promotion-config.entity';
 
 /**
- * One Promote or Apply. The row holds what n8n did: who ran it, which
- * connection, which direction, and which commit. A host review, when one was
+ * One Promote or Apply. The row holds what n8n did: who ran it, which config,
+ * which direction, and which commit. Direction is a copy, so the row can still
+ * say Promote or Apply after the config is deleted. A host review, when one was
  * opened, lives on `promotion_review`.
  */
 @Entity('promotion_run')
@@ -30,12 +31,12 @@ export class PromotionRun extends WithCreatedAt {
 
 	@Index()
 	@Column({ type: 'varchar', length: 36, nullable: true })
-	connectionId: string | null;
+	configId: string | null;
 
 	@Column({ type: 'uuid', nullable: true })
 	createdById: string | null;
 
-	/** Copied from the config at run time. A later config edit does not change it. */
+	/** Copied from the config when the run is written. A later config edit does not change it. */
 	@Column({ type: 'varchar', length: 16 })
 	direction: PromotionDirection;
 
@@ -46,9 +47,9 @@ export class PromotionRun extends WithCreatedAt {
 	@Column({ type: 'varchar', length: 64 })
 	commitSha: string;
 
-	@ManyToOne(() => PromotionConnection, { onDelete: 'SET NULL', nullable: true })
-	@JoinColumn({ name: 'connectionId' })
-	connection: Relation<PromotionConnection> | null;
+	@ManyToOne(() => PromotionConfig, { onDelete: 'SET NULL', nullable: true })
+	@JoinColumn({ name: 'configId' })
+	config: Relation<PromotionConfig> | null;
 
 	@ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
 	@JoinColumn({ name: 'createdById' })

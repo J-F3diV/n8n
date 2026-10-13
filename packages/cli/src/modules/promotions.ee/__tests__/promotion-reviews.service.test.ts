@@ -44,6 +44,7 @@ describe('PromotionReviewsService', () => {
 	});
 	const input = mock<PromotionOperationInput>({
 		connectionId: 'conn1',
+		configId: 'config-1',
 		config: {
 			direction: 'promote',
 			settings: { schemaVersion: 1, baseBranchName: 'staging', createBranchOnPromotion: true },
@@ -108,7 +109,7 @@ describe('PromotionReviewsService', () => {
 		);
 		expect(runRepository.insertRun).toHaveBeenCalledWith(
 			{
-				connectionId: 'conn1',
+				configId: 'config-1',
 				createdById: 'actor',
 				direction: 'promote',
 				branchName: push.branchName,

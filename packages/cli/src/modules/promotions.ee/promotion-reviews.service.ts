@@ -91,9 +91,9 @@ export class PromotionReviewsService {
 				await this.txRunner.run({}, async (ctx) => {
 					const run = await this.runRepository.insertRun(
 						{
-							connectionId: input.connectionId,
+							configId: input.configId,
 							createdById: actor.id,
-							direction: 'promote',
+							direction: input.config.direction,
 							branchName,
 							commitSha,
 						},

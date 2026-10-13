@@ -7,7 +7,7 @@ import { PromotionRun } from '../entities/promotion-run.entity';
 /** The id is generated on insert. The caller does not need it beforehand. */
 export type NewPromotionRun = Pick<
 	PromotionRun,
-	'connectionId' | 'createdById' | 'direction' | 'branchName' | 'commitSha'
+	'configId' | 'createdById' | 'direction' | 'branchName' | 'commitSha'
 >;
 
 @Service()

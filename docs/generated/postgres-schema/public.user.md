@@ -397,7 +397,7 @@ erDiagram
 "public.promotion_run" {
   varchar_255_ branchName
   varchar_64_ commitSha
-  varchar_36_ connectionId FK
+  varchar_36_ configId FK
   timestamp_3__with_time_zone createdAt
   uuid createdById FK
   varchar_16_ direction

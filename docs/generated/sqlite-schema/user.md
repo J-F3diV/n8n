@@ -403,7 +403,7 @@ erDiagram
 "promotion_run" {
   varchar_255_ branchName
   varchar_64_ commitSha
-  varchar_36_ connectionId FK
+  varchar_36_ configId FK
   datetime_3_ createdAt
   varchar createdById FK
   varchar_16_ direction

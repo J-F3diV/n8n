@@ -5,6 +5,7 @@ import { Container } from '@n8n/di';
 
 import { createMember, createOwner } from '@test-integration/db/users';
 
+import { PromotionConfigRepository } from '../database/repositories/promotion-config.repository';
 import { PromotionConnectionRepository } from '../database/repositories/promotion-connection.repository';
 import { PromotionProviderRepository } from '../database/repositories/promotion-provider.repository';
 import { PromotionReviewRepository } from '../database/repositories/promotion-review.repository';
@@ -12,10 +13,12 @@ import { PromotionRunRepository } from '../database/repositories/promotion-run.r
 
 let providerRepository: PromotionProviderRepository;
 let connectionRepository: PromotionConnectionRepository;
+let configRepository: PromotionConfigRepository;
 let runRepository: PromotionRunRepository;
 let reviewRepository: PromotionReviewRepository;
 let owner: User;
 let connectionId: string;
+let configId: string;
 
 beforeAll(async () => {
 	await testModules.loadModules(['promotions']);
@@ -23,6 +26,7 @@ beforeAll(async () => {
 
 	providerRepository = Container.get(PromotionProviderRepository);
 	connectionRepository = Container.get(PromotionConnectionRepository);
+	configRepository = Container.get(PromotionConfigRepository);
 	runRepository = Container.get(PromotionRunRepository);
 	reviewRepository = Container.get(PromotionReviewRepository);
 });
@@ -35,6 +39,7 @@ beforeEach(async () => {
 	// Delete children before parents to satisfy the foreign keys.
 	await reviewRepository.delete({});
 	await runRepository.delete({});
+	await configRepository.delete({});
 	await connectionRepository.delete({});
 	await providerRepository.delete({});
 	await testDb.truncate(['User']);
@@ -54,6 +59,13 @@ beforeEach(async () => {
 		target: { schemaVersion: 1, remoteUrl: 'https://example.com/org/repo.git' },
 	});
 	connectionId = connection.id;
+	const config = await configRepository.insertConfig({
+		connectionId,
+		direction: 'promote',
+		name: 'Promote',
+		settings: { schemaVersion: 1, baseBranchName: 'main', createBranchOnPromotion: true },
+	});
+	configId = config.id;
 });
 
 let reviewCount = 0;
@@ -61,7 +73,7 @@ let reviewCount = 0;
 async function insertReview(over: { id?: string } = {}) {
 	reviewCount += 1;
 	const run = await runRepository.insertRun({
-		connectionId,
+		configId,
 		createdById: owner.id,
 		direction: 'promote',
 		branchName: `n8n-promotion/${reviewCount}`,
@@ -96,22 +108,26 @@ describe('PromotionReviewRepository', () => {
 			commitSha: run.commitSha,
 		});
 		expect(found?.run?.createdBy?.id).toBe(owner.id);
-		expect(found?.run?.connection?.id).toBe(connectionId);
+		expect(found?.run?.config?.id).toBe(configId);
+		expect(found?.run?.config?.connection?.id).toBe(connectionId);
 		expect(found?.approvedBy).toBeNull();
 	});
 
-	it('keeps the review when its connection or approver is deleted', async () => {
+	it('keeps the review when its config or approver is deleted', async () => {
 		const { review, run } = await insertReview();
 		const member = await createMember();
 		await reviewRepository.claimApproval(review.id, member.id);
 
-		await connectionRepository.delete({ id: run.connectionId! });
+		await connectionRepository.delete({ id: connectionId });
 		await Container.get(UserRepository).delete({ id: member.id });
 
 		const found = await reviewRepository.findByIdWithRelations(review.id);
 		expect(found).toMatchObject({ approvedById: null });
-		expect(found?.run?.connectionId).toBeNull();
-		expect(found?.run?.connection).toBeNull();
+		expect(found?.run?.configId).toBeNull();
+		expect(found?.run?.config).toBeNull();
+		expect(found?.run?.direction).toBe('promote');
+		expect(found?.run?.branchName).toBe(run.branchName);
+		expect(found?.run?.commitSha).toBe(run.commitSha);
 		expect(found?.approvedBy).toBeNull();
 		expect(found?.run?.createdById).toBe(owner.id);
 		expect(found?.run?.createdBy?.id).toBe(owner.id);
@@ -163,7 +179,7 @@ describe('PromotionReviewRepository', () => {
 	});
 
 	it('finds only open reviews for a refresh', async () => {
-		const { review: open, run } = await insertReview();
+		const { review: open } = await insertReview();
 		const { review: merged } = await insertReview();
 		await reviewRepository.recordSync(merged.id, {
 			state: 'merged',
@@ -173,7 +189,7 @@ describe('PromotionReviewRepository', () => {
 
 		const found = await reviewRepository.findOpenReviews();
 		expect(found.map((r) => r.id)).toEqual([open.id]);
-		expect(found[0].run?.connection?.id).toBe(run.connectionId);
+		expect(found[0].run?.config?.connection?.id).toBe(connectionId);
 	});
 
 	it('lets only the first approver claim a review and can release the claim', async () => {

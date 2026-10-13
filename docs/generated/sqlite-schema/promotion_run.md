@@ -6,7 +6,7 @@
 <summary><strong>Table Definition</strong></summary>
 
 ```sql
-CREATE TABLE "promotion_run" ("id" varchar(36) PRIMARY KEY NOT NULL, "connectionId" varchar(36), "createdById" varchar, "direction" varchar(16) NOT NULL, "branchName" varchar(255) NOT NULL, "commitSha" varchar(64) NOT NULL, "createdAt" datetime(3) NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')), CONSTRAINT "CHK_promotion_run_direction" CHECK ("direction" IN ('promote', 'apply')), CONSTRAINT "FK_promotion_run_connectionId" FOREIGN KEY ("connectionId") REFERENCES "promotion_connection" ("id") ON DELETE SET NULL, CONSTRAINT "FK_promotion_run_createdById" FOREIGN KEY ("createdById") REFERENCES "user" ("id") ON DELETE SET NULL)
+CREATE TABLE "promotion_run" ("id" varchar(36) PRIMARY KEY NOT NULL, "configId" varchar(36), "createdById" varchar, "direction" varchar(16) NOT NULL, "branchName" varchar(255) NOT NULL, "commitSha" varchar(64) NOT NULL, "createdAt" datetime(3) NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')), CONSTRAINT "CHK_promotion_run_direction" CHECK ("direction" IN ('promote', 'apply')), CONSTRAINT "FK_promotion_run_configId" FOREIGN KEY ("configId") REFERENCES "promotion_config" ("id") ON DELETE SET NULL, CONSTRAINT "FK_promotion_run_createdById" FOREIGN KEY ("createdById") REFERENCES "user" ("id") ON DELETE SET NULL)
 ```
 
 </details>
@@ -17,7 +17,7 @@ CREATE TABLE "promotion_run" ("id" varchar(36) PRIMARY KEY NOT NULL, "connection
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
 | branchName | varchar(255) |  | false |  |  |  |
 | commitSha | varchar(64) |  | false |  |  |  |
-| connectionId | varchar(36) |  | true |  | [promotion_connection](promotion_connection.md) |  |
+| configId | varchar(36) |  | true |  | [promotion_config](promotion_config.md) |  |
 | createdAt | datetime(3) | STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW') | false |  |  |  |
 | createdById | varchar |  | true |  | [user](user.md) |  |
 | direction | varchar(16) |  | false |  |  |  |
@@ -29,7 +29,7 @@ CREATE TABLE "promotion_run" ("id" varchar(36) PRIMARY KEY NOT NULL, "connection
 | ---- | ---- | ---------- |
 | - | CHECK | CHECK ("direction" IN ('promote', 'apply')) |
 | - (Foreign key ID: 0) | FOREIGN KEY | FOREIGN KEY (createdById) REFERENCES user (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE |
-| - (Foreign key ID: 1) | FOREIGN KEY | FOREIGN KEY (connectionId) REFERENCES promotion_connection (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE |
+| - (Foreign key ID: 1) | FOREIGN KEY | FOREIGN KEY (configId) REFERENCES promotion_config (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE |
 | id | PRIMARY KEY | PRIMARY KEY (id) |
 | sqlite_autoindex_promotion_run_1 | PRIMARY KEY | PRIMARY KEY (id) |
 
@@ -37,7 +37,7 @@ CREATE TABLE "promotion_run" ("id" varchar(36) PRIMARY KEY NOT NULL, "connection
 
 | Name | Definition |
 | ---- | ---------- |
-| IDX_721876320c769ad6ce58268b14 | CREATE INDEX "IDX_721876320c769ad6ce58268b14" ON "promotion_run" ("connectionId")  |
+| IDX_5c00951cc85ac1bc6f120b1e69 | CREATE INDEX "IDX_5c00951cc85ac1bc6f120b1e69" ON "promotion_run" ("configId")  |
 | sqlite_autoindex_promotion_run_1 | PRIMARY KEY (id) |
 
 ## Relations
@@ -45,26 +45,26 @@ CREATE TABLE "promotion_run" ("id" varchar(36) PRIMARY KEY NOT NULL, "connection
 ```mermaid
 erDiagram
 
-"promotion_run" }o--o| "promotion_connection" : "FOREIGN KEY (connectionId) REFERENCES promotion_connection (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE"
+"promotion_run" }o--o| "promotion_config" : "FOREIGN KEY (configId) REFERENCES promotion_config (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE"
 "promotion_run" }o--o| "user" : "FOREIGN KEY (createdById) REFERENCES user (id) ON UPDATE NO ACTION ON DELETE SET NULL MATCH NONE"
 "promotion_review" }o--|| "promotion_run" : "FOREIGN KEY (runId) REFERENCES promotion_run (id) ON UPDATE NO ACTION ON DELETE CASCADE MATCH NONE"
 
 "promotion_run" {
   varchar_255_ branchName
   varchar_64_ commitSha
-  varchar_36_ connectionId FK
+  varchar_36_ configId FK
   datetime_3_ createdAt
   varchar createdById FK
   varchar_16_ direction
   varchar_36_ id PK
 }
-"promotion_connection" {
+"promotion_config" {
+  varchar_36_ connectionId FK
   datetime_3_ createdAt
+  varchar_16_ direction
   varchar_36_ id PK
   varchar_128_ name
-  varchar_36_ providerId FK
-  varchar_16_ scope
-  TEXT target
+  TEXT settings
   datetime_3_ updatedAt
 }
 "user" {

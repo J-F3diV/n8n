@@ -2,7 +2,7 @@ import type { MigrationContext, ReversibleMigration } from '../migration-types';
 
 const runTable = 'promotion_run';
 const reviewTable = 'promotion_review';
-const connectionTable = 'promotion_connection';
+const configTable = 'promotion_config';
 const userTable = 'user';
 
 // Inlined on purpose: a migration must not import live enums from other packages.
@@ -19,24 +19,24 @@ export class CreatePromotionReviewTable1791794659012 implements ReversibleMigrat
 		await createTable(runTable)
 			.withColumns(
 				column('id').varchar(36).primary,
-				column('connectionId')
+				column('configId')
 					.varchar(36)
-					.comment('The connection this run used. NULL after the connection is deleted.'),
+					.comment('The config this run used. NULL after the config is deleted.'),
 				column('createdById').uuid.comment('The user who ran Promote or Apply.'),
 				column('direction')
 					.varchar(16)
 					.notNull.withEnumCheck(DIRECTIONS)
 					.comment(
-						'PromotionDirection enum: "promote" pushes to the remote, "apply" imports from it.',
+						'PromotionDirection enum: "promote" pushes to the remote, "apply" imports from it. Copied from the config when the run is written.',
 					),
 				column('branchName').varchar(255).notNull.comment('The branch this run pushed or applied.'),
 				column('commitSha').varchar(64).notNull.comment('The commit this run pushed or applied.'),
 			)
-			.withCreatedAt.withForeignKey('connectionId', {
-				tableName: connectionTable,
+			.withCreatedAt.withForeignKey('configId', {
+				tableName: configTable,
 				columnName: 'id',
 				onDelete: 'SET NULL',
-				name: `FK_${tablePrefix}promotion_run_connectionId`,
+				name: `FK_${tablePrefix}promotion_run_configId`,
 			})
 			.withForeignKey('createdById', {
 				tableName: userTable,
@@ -44,8 +44,8 @@ export class CreatePromotionReviewTable1791794659012 implements ReversibleMigrat
 				onDelete: 'SET NULL',
 				name: `FK_${tablePrefix}promotion_run_createdById`,
 			})
-			// Foreign key index, for the SET NULL on connection delete.
-			.withIndexOn(['connectionId']);
+			// Foreign key index, for the SET NULL when the config is deleted.
+			.withIndexOn(['configId']);
 
 		await createTable(reviewTable)
 			.withColumns(
