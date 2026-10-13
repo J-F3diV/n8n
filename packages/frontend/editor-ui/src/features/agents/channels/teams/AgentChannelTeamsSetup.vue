@@ -840,7 +840,6 @@ defineExpose({
 							variant="outline"
 							size="medium"
 							:disabled="!canFinish"
-							:loading="loading"
 							data-testid="teams-done"
 							@click="emit('done')"
 						>
